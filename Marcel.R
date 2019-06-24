@@ -71,20 +71,23 @@ configure_year_plus_one <- function(df) {
 find_correlation_coef <- function(df) {
   #find correlations
   fit_war <-
-    df %>% group_by(position) %>% do(model  = lm(data = ., WAR_plus_one ~ WAR))
+    test %>% group_by(position) %>% do(model  = lm(data = ., WAR_plus_one ~ WAR))
   fit_G <-
-    df %>% group_by(position) %>% do(model = lm(data = ., GP_plus_one ~ GP))
+    test %>% group_by(position) %>% do(model = lm(data = ., GP_plus_one ~ GP))
   fit_TOI <-
-    df %>% group_by(position) %>% do(model = lm(data = ., TOI_all_plus_one  ~ TOI_all))
+    test %>% group_by(position) %>% do(model = lm(data = ., TOI_all_plus_one  ~ TOI_all))
   
   #obtain and combine the various r^2
   cc_war <-
-    glance(fit_war, model) %>% select(position, r.squared) %>% mutate(metric = 'WAR', cor = sqrt(r.squared))
+    glance(fit_war, model) %>% select(position, r.squared) %>% mutate(metric = 'WAR')#, cor = sqrt(r.squared))
   cc_g <-
-    glance(fit_G, model) %>% select(position, r.squared) %>% mutate(metric = 'GP', cor = sqrt(r.squared))
+    glance(fit_G, model) %>% select(position, r.squared) %>% mutate(metric = 'GP')#, cor = sqrt(r.squared))
   cc_TOI <-
-    glance(fit_TOI, model) %>% select(position, r.squared) %>% mutate(metric = 'TOI_all', cor = sqrt(r.squared))
-  return(bind_rows(cc_war, cc_g, cc_TOI))
+    glance(fit_TOI, model) %>% select(position, r.squared) %>% mutate(metric = 'TOI_all')#, cor = sqrt(r.squared))
+  
+  corr<-bind_rows(cc_war, cc_g, cc_TOI) %>% group_by(position) %>% spread(metric, r.squared) %>% rename(reg_GP = GP, reg_TOI_all = TOI_all, reg_WAR = WAR )
+  
+  return(bind_rows(cc_war, cc_g, cc_TOI) %>% spread(metric, r.squared) %>% rename(reg_GP = GP, reg_TOI_all = TOI_all, reg_WAR = WAR ))
 }
 
 #fits linear regressions on previous three year data to obtain beta values, used to weight previous year data
@@ -234,7 +237,12 @@ configure_past_three_seasons_data <-
 
   }
 
-regress_data <- function(weighted_years)
+regress_data <- function(weighted_years, corr){
+  #join on correlation data to know how much to regress
+  to_regress<-weighted_years %>% inner_join(corr, by = "position")
+  
+  ###TODO####: find averages for stats
+}
 
 #use EH scraper to ping the NHL API for birthdays 
 get_birthdays <- function() {
